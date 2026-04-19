@@ -1,86 +1,135 @@
 {
-  "name": "ai-json-optimizer",
-  "displayName": "AI JSON Optimizer (Reduce Tokens)",
-  "description": "Reduce AI token usage by optimizing JSON using TOON format. Automatically chooses the most efficient format for AI models.",
-  "version": "0.0.1",
-  "publisher": "googlify-technologies",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/googlifytechnologies/json-token-optimizer.git"
-  },
-  "engines": {
-    "vscode": "^1.80.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "keywords": [
-    "json",
-    "ai",
-    "token",
-    "optimization",
-    "compression",
-    "openai",
-    "claude",
-    "llm",
-    "payload"
-  ],
-  "activationEvents": [
-    "onCommand:json-to-toon.optimize"
-  ],
-  "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "json-to-toon.optimize",
-        "title": "Optimize JSON for AI"
-      }
-    ],
-    "menus": {
-      "commandPalette": [
-        {
-          "command": "json-to-toon.optimize"
-        }
-      ],
-      "editor/context": [
-        {
-          "command": "json-to-toon.optimize",
-          "when": "resourceExtname == .json"
-        }
-      ]
-    },
-    "configuration": {
-      "title": "AI Payload Optimizer",
-      "properties": {
-        "aiOptimizer.prettyPrint": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable formatted output instead of minified"
-        }
-      }
-    }
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\"",
-    "compile": "npm run clean && tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "npm run pretest && mocha \"out/test/**/*.test.js\""
-  },
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.46.1",
-    "@typescript-eslint/parser": "^8.46.1",
-    "@types/vscode": "^1.74.0",
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "16.x",
-    "eslint": "^8.34.0",
-    "glob": "^8.1.0",
-    "mocha": "^10.2.0",
-    "typescript": "^4.9.5",
-    "@vscode/test-electron": "^2.2.3"
-  }
+    "name":  "ai-json-optimizer",
+    "displayName":  "AI JSON Optimizer (Reduce Tokens)",
+    "description":  "Reduce AI token usage by optimizing JSON using TOON format. Automatically chooses the most efficient format for AI models.",
+    "version":  "0.0.1",
+    "publisher":  "googlify-technologies",
+    "license":  "MIT",
+    "repository":  {
+                       "type":  "git",
+                       "url":  "https://github.com/googlifytechnologies/json-token-optimizer.git"
+                   },
+    "engines":  {
+                    "vscode":  "^1.80.0"
+                },
+    "categories":  [
+                       "Other"
+                   ],
+    "keywords":  [
+                     "json",
+                     "ai",
+                     "token",
+                     "optimization",
+                     "compression",
+                     "openai",
+                     "claude",
+                     "llm",
+                     "payload"
+                 ],
+    "activationEvents":  [
+                             "onCommand:json-to-toon.optimize",
+                             "onCommand:aiOptimizer.toon",
+                             "onCommand:aiOptimizer.dsl",
+                             "onCommand:aiOptimizer.json"
+                         ],
+    "main":  "./out/extension.js",
+    "contributes":  {
+                        "commands":  [
+                                         {
+                                             "command":  "json-to-toon.optimize",
+                                             "title":  "Optimize JSON for AI"
+                                         },
+                                         {
+                                             "command":  "aiOptimizer.toon",
+                                             "title":  "Optimize JSON -\u003e TOON"
+                                         },
+                                         {
+                                             "command":  "aiOptimizer.dsl",
+                                             "title":  "Optimize JSON -\u003e DSL"
+                                         },
+                                         {
+                                             "command":  "aiOptimizer.json",
+                                             "title":  "Optimize JSON -\u003e Minified JSON"
+                                         }
+                                     ],
+                        "menus":  {
+                                      "commandPalette":  [
+                                                             {
+                                                                 "command":  "json-to-toon.optimize"
+                                                             },
+                                                             {
+                                                                 "command":  "aiOptimizer.toon"
+                                                             },
+                                                             {
+                                                                 "command":  "aiOptimizer.dsl"
+                                                             },
+                                                             {
+                                                                 "command":  "aiOptimizer.json"
+                                                             }
+                                                         ],
+                                      "editor/context":  [
+                                                             {
+                                                                 "command":  "json-to-toon.optimize",
+                                                                 "when":  "resourceExtname == .json"
+                                                             },
+                                                             {
+                                                                 "command":  "aiOptimizer.toon",
+                                                                 "when":  "resourceExtname == .json",
+                                                                 "group":  "navigation"
+                                                             },
+                                                             {
+                                                                 "command":  "aiOptimizer.dsl",
+                                                                 "when":  "resourceExtname == .json",
+                                                                 "group":  "navigation"
+                                                             },
+                                                             {
+                                                                 "command":  "aiOptimizer.json",
+                                                                 "when":  "resourceExtname == .json",
+                                                                 "group":  "navigation"
+                                                             }
+                                                         ]
+                                  },
+                        "configuration":  {
+                                              "title":  "AI Payload Optimizer",
+                                              "properties":  {
+                                                                 "aiOptimizer.mode":  {
+                                                                                          "type":  "string",
+                                                                                          "enum":  [
+                                                                                                       "json",
+                                                                                                       "toon",
+                                                                                                       "dsl"
+                                                                                                   ],
+                                                                                          "default":  "dsl",
+                                                                                          "description":  "Output mode: raw JSON, TOON (k/d), or DSL (human-readable compressed)"
+                                                                                      },
+                                                                 "aiOptimizer.prettyPrint":  {
+                                                                                                 "type":  "boolean",
+                                                                                                 "default":  false,
+                                                                                                 "description":  "Enable formatted output instead of minified"
+                                                                                             }
+                                                             }
+                                          }
+                    },
+    "scripts":  {
+                    "vscode:prepublish":  "npm run compile",
+                    "clean":  "node -e \"require(\u0027fs\u0027).rmSync(\u0027out\u0027,{recursive:true,force:true})\"",
+                    "compile":  "npm run clean \u0026\u0026 tsc -p ./",
+                    "watch":  "tsc -watch -p ./",
+                    "pretest":  "npm run compile \u0026\u0026 npm run lint",
+                    "lint":  "eslint src --ext ts",
+                    "test":  "npm run pretest \u0026\u0026 mocha \"out/test/**/*.test.js\""
+                },
+    "devDependencies":  {
+                            "@typescript-eslint/eslint-plugin":  "^8.46.1",
+                            "@typescript-eslint/parser":  "^8.46.1",
+                            "@types/vscode":  "^1.74.0",
+                            "@types/glob":  "^8.1.0",
+                            "@types/mocha":  "^10.0.1",
+                            "@types/node":  "16.x",
+                            "eslint":  "^8.34.0",
+                            "glob":  "^8.1.0",
+                            "mocha":  "^10.2.0",
+                            "typescript":  "^4.9.5",
+                            "@vscode/test-electron":  "^2.2.3"
+                        }
 }

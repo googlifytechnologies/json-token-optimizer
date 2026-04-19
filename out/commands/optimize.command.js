@@ -9,28 +9,56 @@ class OptimizeCommand {
     constructor() {
         this.optimizerService = new optimizer_service_1.OptimizerService();
     }
-    async execute() {
+    async execute(options = {}) {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             vscode.window.showErrorMessage('No active editor found.');
             return;
         }
-        const input = (0, editorHelper_1.getSelectedTextOrFull)(editor);
+        const mode = options.modeOverride ?? vscode.workspace.getConfiguration('aiOptimizer').get('mode', 'dsl');
+        const input = this.getInputText(editor, options.selectionOnly === true);
+        if (input === null) {
+            return;
+        }
         const validation = (0, jsonValidator_1.validateJson)(input);
         if (!validation.isValid) {
             vscode.window.showErrorMessage(validation.error);
             return;
         }
-        const result = this.optimizerService.optimize(validation.data);
-        await (0, editorHelper_1.replaceSelectedTextOrFull)(editor, result.output);
-        await vscode.env.clipboard.writeText(result.output);
-        vscode.window.showInformationMessage('Optimized JSON copied to clipboard');
-        if (result.format === 'toon') {
-            vscode.window.showInformationMessage(`Optimized using TOON (k/d). Saved ${result.stats.savedPercent}% tokens (${result.stats.originalTokens} -> ${result.stats.optimizedTokens})`);
+        const result = this.optimizerService.optimize(validation.data, mode);
+        if (options.selectionOnly) {
+            await editor.edit(editBuilder => {
+                editBuilder.replace(editor.selection, result.output);
+            });
         }
         else {
-            vscode.window.showInformationMessage('TOON not beneficial. Using JSON (no token savings)');
+            await (0, editorHelper_1.replaceSelectedTextOrFull)(editor, result.output);
         }
+        await vscode.env.clipboard.writeText(result.output);
+        if (mode === 'toon') {
+            if (result.format === 'toon') {
+                vscode.window.showInformationMessage('Optimized using TOON (k/d)');
+            }
+            else {
+                vscode.window.showInformationMessage('TOON not beneficial. Using JSON');
+            }
+        }
+        else if (result.format === 'dsl') {
+            vscode.window.showInformationMessage('Optimized using DSL');
+        }
+        else {
+            vscode.window.showInformationMessage('Optimized using JSON');
+        }
+    }
+    getInputText(editor, selectionOnly) {
+        if (selectionOnly) {
+            if (editor.selection.isEmpty) {
+                vscode.window.showErrorMessage('No JSON selected');
+                return null;
+            }
+            return editor.document.getText(editor.selection);
+        }
+        return (0, editorHelper_1.getSelectedTextOrFull)(editor);
     }
 }
 exports.OptimizeCommand = OptimizeCommand;

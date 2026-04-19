@@ -31,7 +31,7 @@ export interface TokenStats {
 }
 
 export interface OptimizationResult {
-  format: 'json' | 'toon';
+  format: 'json' | 'toon' | 'dsl';
   output: string;
   stats: {
     originalTokens: number;
