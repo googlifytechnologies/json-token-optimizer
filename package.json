@@ -2,7 +2,7 @@
   "name": "ai-json-optimizer",
   "displayName": "JSON Token Optimizer (AI + TOON + DSL)",
   "description": "Reduce AI token usage by optimizing JSON using TOON format. Automatically chooses the most efficient format for AI models.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "googlifytechnologies",
   "license": "MIT",
   "repository": {

@@ -20,8 +20,11 @@ export class ToonService {
 
   convertToonToJson(toon: ToonResult): Record<string, unknown>[] {
     const { k: keys, d: data } = toon;
+    if (data.length === 0) {
+      return [];
+    }
+
     if (Array.isArray(data[0])) {
-      // Array of objects: d is ToonValue[][]
       return (data as ToonValue[][]).map((row: ToonValue[]) => {
         const obj: Record<string, unknown> = {};
         keys.forEach((key, index) => {
@@ -32,17 +35,16 @@ export class ToonService {
         });
         return obj;
       });
-    } else {
-      // Single object: d is ToonValue[]
-      const obj: Record<string, unknown> = {};
-      keys.forEach((key, index) => {
-        const value = data[index];
-        if (value !== null) {
-          obj[key] = value;
-        }
-      });
-      return [obj];
     }
+
+    const obj: Record<string, unknown> = {};
+    keys.forEach((key, index) => {
+      const value = data[index];
+      if (value !== null) {
+        obj[key] = value;
+      }
+    });
+    return [obj];
   }
 
   convert(data: unknown): ConversionResult {

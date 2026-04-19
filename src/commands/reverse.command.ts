@@ -29,10 +29,10 @@ export class ReverseCommand {
       let result: unknown;
       const validation = validateJson(input);
 
-      if (validation.isValid) {
-        result = validation.data!;
-      } else if (this.isToonFormat(input)) {
+      if (validation.isValid && this.isToonResult(validation.data)) {
         result = this.reverseToon(input);
+      } else if (validation.isValid) {
+        result = validation.data!;
       } else {
         vscode.window.showErrorMessage('Unable to reverse: provide valid JSON or TOON input.');
         return;

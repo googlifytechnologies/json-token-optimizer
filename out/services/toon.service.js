@@ -16,8 +16,10 @@ class ToonService {
     }
     convertToonToJson(toon) {
         const { k: keys, d: data } = toon;
+        if (data.length === 0) {
+            return [];
+        }
         if (Array.isArray(data[0])) {
-            // Array of objects: d is ToonValue[][]
             return data.map((row) => {
                 const obj = {};
                 keys.forEach((key, index) => {
@@ -29,17 +31,14 @@ class ToonService {
                 return obj;
             });
         }
-        else {
-            // Single object: d is ToonValue[]
-            const obj = {};
-            keys.forEach((key, index) => {
-                const value = data[index];
-                if (value !== null) {
-                    obj[key] = value;
-                }
-            });
-            return [obj];
-        }
+        const obj = {};
+        keys.forEach((key, index) => {
+            const value = data[index];
+            if (value !== null) {
+                obj[key] = value;
+            }
+        });
+        return [obj];
     }
     convert(data) {
         logger_1.Logger.log('Starting TOON conversion');
