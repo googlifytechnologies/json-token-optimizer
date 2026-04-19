@@ -26,115 +26,100 @@ export class ReverseCommand {
     }
 
     try {
-      let result: unknown;
       const validation = validateJson(input);
 
       if (!validation.isValid) {
-        vscode.window.showErrorMessage('Unable to reverse: provide valid JSON.');
+        vscode.window.showErrorMessage('Invalid JSON provided.');
         return;
       }
 
-      const isToon = validation.data && this.isToonResult(validation.data);
-      if (isToon) {
-        result = this.convertNestedToJson(validation.data!);
-      } else {
-        result = validation.data!;
-      }
+      // ✅ Always convert (single-pass, no detection needed)
+      const result = this.convertNestedToJson(validation.data);
 
       const output = JSON.stringify(result, null, 2);
+
       await replaceSelectedTextOrFull(editor, output);
       await vscode.env.clipboard.writeText(output);
 
-      vscode.window.showInformationMessage('Successfully reversed to JSON.');
+      vscode.window.showInformationMessage('Successfully reversed TOON → JSON.');
     } catch (error) {
-      vscode.window.showErrorMessage(`Failed to reverse: ${(error as Error).message}`);
+      vscode.window.showErrorMessage(
+        `Failed to reverse: ${(error as Error).message}`
+      );
     }
   }
 
-  private isToonFormat(input: string): boolean {
-    try {
-      const parsed = JSON.parse(input);
-      return this.isToonResult(parsed);
-    } catch {
-      return false;
-    }
-  }
-
+  /**
+   * Type guard for TOON structure
+   */
   private isToonResult(value: unknown): value is ToonResult {
-    if (!isObject(value)) {
-      return false;
-    }
+    if (!isObject(value)) return false;
 
-    const objectValue = value as Record<string, unknown>;
-    return 'k' in objectValue && 'd' in objectValue &&
-           Array.isArray(objectValue.k) && Array.isArray(objectValue.d);
+    const obj = value as Record<string, unknown>;
+
+    return (
+      'k' in obj &&
+      'd' in obj &&
+      Array.isArray(obj.k) &&
+      Array.isArray(obj.d) &&
+      obj.k.every((k) => typeof k === 'string')
+    );
   }
 
-  private isDeepEmptyToon(obj: unknown): boolean {
-    if (!obj || typeof obj !== 'object') {
-      return false;
-    }
-
-    const o = obj as Record<string, unknown>;
-    if ('k' in o && 'd' in o) {
-      const kEmpty = this.isDeepEmptyToon(o.k) || (Array.isArray(o.k) && o.k.length === 0);
-      const dEmpty = this.isDeepEmptyToon(o.d) || (Array.isArray(o.d) && o.d.length === 0);
-      return kEmpty && dEmpty;
-    }
-
-    return false;
-  }
-
-  private reverseToon(input: string): unknown {
-    const toon = JSON.parse(input);
-    return this.convertNestedToJson(toon);
-  }
-
+  /**
+   * Core recursive converter
+   */
   private convertNestedToJson(value: unknown): unknown {
-    // Step 0: Collapse deep empty TOON structures
-    if (this.isDeepEmptyToon(value)) {
-      return [];
-    }
-
-    // Step 1: Handle arrays
+    // ✅ Handle arrays
     if (Array.isArray(value)) {
-      return (value as unknown[]).map(item => this.convertNestedToJson(item));
+      return value.map((item) => this.convertNestedToJson(item));
     }
 
-    // Step 2: Handle TOON structures
+    // ✅ Handle objects
     if (isObject(value)) {
-      const objectValue = value as Record<string, unknown>;
-      if ('k' in objectValue && 'd' in objectValue &&
-          Array.isArray(objectValue.k) && Array.isArray(objectValue.d)) {
-        const keys = objectValue.k as string[];
-        const data = objectValue.d as unknown[];
+      const obj = value as Record<string, unknown>;
 
-        // Handle empty arrays
-        if (data.length === 0) {
+      // ✅ Handle TOON structure
+      if (this.isToonResult(obj)) {
+        const keys = obj.k as string[];
+        const data = obj.d as unknown[];
+
+        // ✅ Empty TOON → []
+        if (keys.length === 0 && data.length === 0) {
           return [];
         }
 
-        // Convert TOON rows to objects
-        return data.map((row: unknown) => {
-          if (Array.isArray(row)) {
-            const obj: Record<string, unknown> = {};
-            keys.forEach((key, index) => {
-              obj[key] = this.convertNestedToJson((row as unknown[])[index]);
-            });
-            return obj;
+        // ✅ Convert rows to objects
+        return data.map((row) => {
+          if (!Array.isArray(row)) {
+            return this.convertNestedToJson(row);
           }
-          return this.convertNestedToJson(row);
+
+          const result: Record<string, unknown> = {};
+
+          keys.forEach((key, index) => {
+            if (index < row.length) {
+              result[key] = this.convertNestedToJson(row[index]);
+            } else {
+              result[key] = null; // or skip if you prefer
+            }
+          });
+
+          return result;
         });
       }
 
-      // Step 3: Handle normal objects
+      // ✅ Normal object recursion
       const result: Record<string, unknown> = {};
-      for (const [key, entry] of Object.entries(objectValue)) {
-        result[key] = this.convertNestedToJson(entry);
+
+      for (const [key, val] of Object.entries(obj)) {
+        result[key] = this.convertNestedToJson(val);
       }
+
       return result;
     }
 
+    // ✅ Primitive values
     return value;
   }
 }
