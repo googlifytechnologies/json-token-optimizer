@@ -4,65 +4,102 @@ exports.OptimizerService = void 0;
 const toon_service_1 = require("./toon.service");
 const tokenEstimator_service_1 = require("./tokenEstimator.service");
 const minifier_1 = require("../utils/minifier");
-const outputFormatter_1 = require("../utils/outputFormatter");
 class OptimizerService {
     constructor() {
         this.toonService = new toon_service_1.ToonService();
         this.tokenEstimator = new tokenEstimator_service_1.TokenEstimatorService();
     }
-    optimize(input, options = {}) {
-        const prettyPrint = options.prettyPrint ?? false;
+    optimize(input) {
         const originalJson = (0, minifier_1.minifyJson)(input);
         const originalStats = this.tokenEstimator.estimateTokens(originalJson);
-        if (!this.shouldAttemptToon(input)) {
-            return this.createJsonResult(input, originalStats.tokens, prettyPrint);
-        }
-        const conversion = this.toonService.convert(input);
-        if (!conversion.success) {
-            return this.createJsonResult(input, originalStats.tokens, prettyPrint);
-        }
-        const toonJson = (0, minifier_1.minifyJson)(conversion.toon);
-        const toonStats = this.tokenEstimator.estimateTokens(toonJson);
-        if (toonStats.tokens < originalStats.tokens) {
-            const savedTokens = originalStats.tokens - toonStats.tokens;
-            const savedPercent = Math.round((savedTokens / originalStats.tokens) * 100);
-            const output = (0, outputFormatter_1.formatOutput)(conversion.toon, prettyPrint);
-            return {
-                format: 'toon',
-                output,
-                stats: {
-                    originalTokens: originalStats.tokens,
-                    optimizedTokens: toonStats.tokens,
-                    savedTokens,
-                    savedPercent
-                }
-            };
-        }
-        return this.createJsonResult(input, originalStats.tokens, prettyPrint);
-    }
-    shouldAttemptToon(input) {
-        if (Array.isArray(input)) {
-            return input.length > 0 && input.every(item => typeof item === 'object' && item !== null && !Array.isArray(item));
-        }
-        if (typeof input === 'object' && input !== null && !Array.isArray(input)) {
-            const record = input;
-            const keys = Object.keys(record);
-            // Attempt TOON for objects with many keys or nested objects
-            return keys.length > 3 || keys.some(key => typeof record[key] === 'object' && record[key] !== null);
-        }
-        return false;
-    }
-    createJsonResult(input, tokenCount, prettyPrint) {
+        const transformed = this.transformHybrid(input);
+        const optimizedJson = (0, minifier_1.minifyJson)(transformed.value);
+        const optimizedStats = this.tokenEstimator.estimateTokens(optimizedJson);
+        const savedTokens = Math.max(0, originalStats.tokens - optimizedStats.tokens);
+        const savedPercent = originalStats.tokens > 0
+            ? Math.round((savedTokens / originalStats.tokens) * 100)
+            : 0;
         return {
-            format: 'json',
-            output: (0, outputFormatter_1.formatOutput)(input, prettyPrint),
+            format: transformed.usedToon ? 'toon' : 'json',
+            output: optimizedJson,
             stats: {
-                originalTokens: tokenCount,
-                optimizedTokens: tokenCount,
-                savedTokens: 0,
-                savedPercent: 0
+                originalTokens: originalStats.tokens,
+                optimizedTokens: optimizedStats.tokens,
+                savedTokens,
+                savedPercent
             }
         };
+    }
+    shouldUseToon(value) {
+        if (!Array.isArray(value)) {
+            return false;
+        }
+        if (value.length < 2) {
+            return false;
+        }
+        const isObjectArray = value.every(item => this.isPlainObject(item));
+        if (!isObjectArray) {
+            return false;
+        }
+        const keySet = new Set();
+        let commonKeys = null;
+        for (const item of value) {
+            const keys = Object.keys(item);
+            const keySlice = new Set(keys);
+            keys.forEach(k => keySet.add(k));
+            if (commonKeys === null) {
+                commonKeys = keySlice;
+            }
+            else {
+                const intersection = new Set();
+                for (const key of commonKeys) {
+                    if (keySlice.has(key)) {
+                        intersection.add(key);
+                    }
+                }
+                commonKeys = intersection;
+            }
+        }
+        return keySet.size > 1 && (commonKeys?.size ?? 0) > 0;
+    }
+    transformHybrid(value) {
+        if (this.shouldUseToon(value)) {
+            const objects = value;
+            const transformedObjects = objects.map(obj => {
+                const transformedObject = {};
+                for (const [key, item] of Object.entries(obj)) {
+                    transformedObject[key] = this.transformHybrid(item).value;
+                }
+                return transformedObject;
+            });
+            return {
+                value: this.toonService.convertObjectArrayToToon(transformedObjects),
+                usedToon: true
+            };
+        }
+        if (Array.isArray(value)) {
+            let usedToon = false;
+            const transformedArray = value.map(item => {
+                const transformed = this.transformHybrid(item);
+                usedToon = usedToon || transformed.usedToon;
+                return transformed.value;
+            });
+            return { value: transformedArray, usedToon };
+        }
+        if (this.isPlainObject(value)) {
+            const transformedObject = {};
+            let usedToon = false;
+            for (const [key, item] of Object.entries(value)) {
+                const transformed = this.transformHybrid(item);
+                transformedObject[key] = transformed.value;
+                usedToon = usedToon || transformed.usedToon;
+            }
+            return { value: transformedObject, usedToon };
+        }
+        return { value, usedToon: false };
+    }
+    isPlainObject(value) {
+        return typeof value === 'object' && value !== null && !Array.isArray(value);
     }
 }
 exports.OptimizerService = OptimizerService;

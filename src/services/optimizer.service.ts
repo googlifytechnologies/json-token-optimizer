@@ -2,10 +2,10 @@ import { JsonValue, OptimizationResult } from '../types/toon.types';
 import { ToonService } from './toon.service';
 import { TokenEstimatorService } from './tokenEstimator.service';
 import { minifyJson } from '../utils/minifier';
-import { formatOutput } from '../utils/outputFormatter';
 
-interface OptimizeOptions {
-  prettyPrint?: boolean;
+interface HybridTransformResult {
+  value: unknown;
+  usedToon: boolean;
 }
 
 export class OptimizerService {
@@ -17,67 +17,108 @@ export class OptimizerService {
     this.tokenEstimator = new TokenEstimatorService();
   }
 
-  optimize(input: JsonValue, options: OptimizeOptions = {}): OptimizationResult {
-    const prettyPrint = options.prettyPrint ?? false;
+  optimize(input: JsonValue): OptimizationResult {
     const originalJson = minifyJson(input);
     const originalStats = this.tokenEstimator.estimateTokens(originalJson);
+    const transformed = this.transformHybrid(input);
+    const optimizedJson = minifyJson(transformed.value);
+    const optimizedStats = this.tokenEstimator.estimateTokens(optimizedJson);
+    const savedTokens = Math.max(0, originalStats.tokens - optimizedStats.tokens);
+    const savedPercent = originalStats.tokens > 0
+      ? Math.round((savedTokens / originalStats.tokens) * 100)
+      : 0;
 
-    if (!this.shouldAttemptToon(input)) {
-      return this.createJsonResult(input, originalStats.tokens, prettyPrint);
+    return {
+      format: transformed.usedToon ? 'toon' : 'json',
+      output: optimizedJson,
+      stats: {
+        originalTokens: originalStats.tokens,
+        optimizedTokens: optimizedStats.tokens,
+        savedTokens,
+        savedPercent
+      }
+    };
+  }
+
+  shouldUseToon(value: unknown): boolean {
+    if (!Array.isArray(value)) {
+      return false;
     }
 
-    const conversion = this.toonService.convert(input);
-    if (!conversion.success) {
-      return this.createJsonResult(input, originalStats.tokens, prettyPrint);
+    if (value.length < 2) {
+      return false;
     }
 
-    const toonJson = minifyJson(conversion.toon);
-    const toonStats = this.tokenEstimator.estimateTokens(toonJson);
+    const isObjectArray = value.every(item => this.isPlainObject(item));
+    if (!isObjectArray) {
+      return false;
+    }
 
-    if (toonStats.tokens < originalStats.tokens) {
-      const savedTokens = originalStats.tokens - toonStats.tokens;
-      const savedPercent = Math.round((savedTokens / originalStats.tokens) * 100);
-      const output = formatOutput(conversion.toon, prettyPrint);
-      return {
-        format: 'toon',
-        output,
-        stats: {
-          originalTokens: originalStats.tokens,
-          optimizedTokens: toonStats.tokens,
-          savedTokens,
-          savedPercent
+    const keySet = new Set<string>();
+    let commonKeys: Set<string> | null = null;
+    for (const item of value) {
+      const keys = Object.keys(item as Record<string, unknown>);
+      const keySlice = new Set(keys);
+      keys.forEach(k => keySet.add(k));
+
+      if (commonKeys === null) {
+        commonKeys = keySlice;
+      } else {
+        const intersection = new Set<string>();
+        for (const key of commonKeys) {
+          if (keySlice.has(key)) {
+            intersection.add(key);
+          }
         }
+        commonKeys = intersection;
+      }
+    }
+
+    return keySet.size > 1 && (commonKeys?.size ?? 0) > 0;
+  }
+
+  private transformHybrid(value: unknown): HybridTransformResult {
+    if (this.shouldUseToon(value)) {
+      const objects = value as Record<string, unknown>[];
+      const transformedObjects = objects.map(obj => {
+        const transformedObject: Record<string, unknown> = {};
+        for (const [key, item] of Object.entries(obj)) {
+          transformedObject[key] = this.transformHybrid(item).value;
+        }
+        return transformedObject;
+      });
+
+      return {
+        value: this.toonService.convertObjectArrayToToon(transformedObjects),
+        usedToon: true
       };
     }
 
-    return this.createJsonResult(input, originalStats.tokens, prettyPrint);
-  }
-
-  private shouldAttemptToon(input: JsonValue): boolean {
-    if (Array.isArray(input)) {
-      return input.length > 0 && input.every(item => typeof item === 'object' && item !== null && !Array.isArray(item));
+    if (Array.isArray(value)) {
+      let usedToon = false;
+      const transformedArray = value.map(item => {
+        const transformed = this.transformHybrid(item);
+        usedToon = usedToon || transformed.usedToon;
+        return transformed.value;
+      });
+      return { value: transformedArray, usedToon };
     }
 
-    if (typeof input === 'object' && input !== null && !Array.isArray(input)) {
-      const record = input as Record<string, unknown>;
-      const keys = Object.keys(record);
-      // Attempt TOON for objects with many keys or nested objects
-      return keys.length > 3 || keys.some(key => typeof record[key] === 'object' && record[key] !== null);
-    }
-
-    return false;
-  }
-
-  private createJsonResult(input: JsonValue, tokenCount: number, prettyPrint: boolean): OptimizationResult {
-    return {
-      format: 'json',
-      output: formatOutput(input, prettyPrint),
-      stats: {
-        originalTokens: tokenCount,
-        optimizedTokens: tokenCount,
-        savedTokens: 0,
-        savedPercent: 0
+    if (this.isPlainObject(value)) {
+      const transformedObject: Record<string, unknown> = {};
+      let usedToon = false;
+      for (const [key, item] of Object.entries(value)) {
+        const transformed = this.transformHybrid(item);
+        transformedObject[key] = transformed.value;
+        usedToon = usedToon || transformed.usedToon;
       }
-    };
+      return { value: transformedObject, usedToon };
+    }
+
+    return { value, usedToon: false };
+  }
+
+  private isPlainObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 }

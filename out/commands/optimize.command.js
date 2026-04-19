@@ -21,8 +21,7 @@ class OptimizeCommand {
             vscode.window.showErrorMessage(validation.error);
             return;
         }
-        const prettyPrint = vscode.workspace.getConfiguration('aiOptimizer').get('prettyPrint', false);
-        const result = this.optimizerService.optimize(validation.data, { prettyPrint });
+        const result = this.optimizerService.optimize(validation.data);
         await (0, editorHelper_1.replaceSelectedTextOrFull)(editor, result.output);
         await vscode.env.clipboard.writeText(result.output);
         vscode.window.showInformationMessage('Optimized JSON copied to clipboard');

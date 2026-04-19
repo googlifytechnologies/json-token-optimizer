@@ -6,6 +6,14 @@ const logger_1 = require("../utils/logger");
 const typeGuards_1 = require("../utils/typeGuards");
 const MAX_DEPTH = 10;
 class ToonService {
+    convertObjectArrayToToon(objects) {
+        const keys = (0, keyExtractor_1.extractKeys)(objects);
+        const rows = objects.map(obj => keys.map(key => {
+            const value = obj[key];
+            return (value === undefined ? null : value);
+        }));
+        return { k: keys, d: rows };
+    }
     convert(data) {
         logger_1.Logger.log('Starting TOON conversion');
         const originalSize = JSON.stringify(data).length;
@@ -54,13 +62,17 @@ class ToonService {
             return arr.map(item => this.convertToToon(item, depth + 1));
         }
         // Array of objects
-        const keys = (0, keyExtractor_1.extractKeys)(arr);
-        logger_1.Logger.log(`Extracted keys: ${keys.join(', ')}`);
-        const values = arr.map(item => {
+        const processedObjects = arr.map(item => {
             const obj = item;
-            return keys.map(key => this.convertToToon(obj[key], depth + 1));
+            const converted = {};
+            for (const [key, val] of Object.entries(obj)) {
+                converted[key] = this.convertToToon(val, depth + 1);
+            }
+            return converted;
         });
-        return { k: keys, d: values };
+        const result = this.convertObjectArrayToToon(processedObjects);
+        logger_1.Logger.log(`Extracted keys: ${result.k.join(', ')}`);
+        return result;
     }
 }
 exports.ToonService = ToonService;

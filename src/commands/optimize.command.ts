@@ -25,8 +25,7 @@ export class OptimizeCommand {
       return;
     }
 
-    const prettyPrint = vscode.workspace.getConfiguration('aiOptimizer').get<boolean>('prettyPrint', false);
-    const result = this.optimizerService.optimize(validation.data!, { prettyPrint });
+    const result = this.optimizerService.optimize(validation.data!);
 
     await replaceSelectedTextOrFull(editor, result.output);
 

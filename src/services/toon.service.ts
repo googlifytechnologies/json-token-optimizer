@@ -6,6 +6,18 @@ import { isPrimitive, isObject } from '../utils/typeGuards';
 const MAX_DEPTH = 10;
 
 export class ToonService {
+  convertObjectArrayToToon(objects: Record<string, unknown>[]): ToonResult {
+    const keys = extractKeys(objects);
+    const rows = objects.map(obj =>
+      keys.map(key => {
+        const value = obj[key];
+        return (value === undefined ? null : value) as ToonValue;
+      })
+    );
+
+    return { k: keys, d: rows };
+  }
+
   convert(data: unknown): ConversionResult {
     Logger.log('Starting TOON conversion');
     const originalSize = JSON.stringify(data).length;
@@ -64,12 +76,17 @@ export class ToonService {
     }
 
     // Array of objects
-    const keys = extractKeys(arr as Record<string, unknown>[]);
-    Logger.log(`Extracted keys: ${keys.join(', ')}`);
-    const values = arr.map(item => {
+    const processedObjects = arr.map(item => {
       const obj = item as Record<string, unknown>;
-      return keys.map(key => this.convertToToon(obj[key], depth + 1) as ToonValue);
+      const converted: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(obj)) {
+        converted[key] = this.convertToToon(val, depth + 1);
+      }
+      return converted;
     });
-    return { k: keys, d: values };
+
+    const result = this.convertObjectArrayToToon(processedObjects);
+    Logger.log(`Extracted keys: ${result.k.join(', ')}`);
+    return result;
   }
 }
