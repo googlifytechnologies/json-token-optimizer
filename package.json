@@ -4,6 +4,7 @@
   "description": "Reduce AI token usage by optimizing JSON using TOON format. Automatically chooses the most efficient format for AI models.",
   "version": "0.0.1",
   "publisher": "googlify-technologies",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.80.0"
   },
