@@ -35,19 +35,23 @@ class OptimizeCommand {
             await (0, editorHelper_1.replaceSelectedTextOrFull)(editor, result.output);
         }
         await vscode.env.clipboard.writeText(result.output);
+        const { originalTokens, optimizedTokens, savedTokens, savedPercent } = result.stats;
+        const savingsMessage = savedTokens > 0
+            ? `Saved ${savedTokens} tokens (${savedPercent}%) from ${originalTokens} → ${optimizedTokens}`
+            : `No token savings; token count remains ${optimizedTokens}`;
         if (mode === 'toon') {
             if (result.format === 'toon') {
-                vscode.window.showInformationMessage('Optimized using TOON (k/d)');
+                vscode.window.showInformationMessage(`Optimized using TOON (k/d). ${savingsMessage}`);
             }
             else {
-                vscode.window.showInformationMessage('TOON not beneficial. Using JSON');
+                vscode.window.showInformationMessage(`TOON not beneficial. Using JSON. ${savingsMessage}`);
             }
         }
         else if (result.format === 'dsl') {
-            vscode.window.showInformationMessage('Optimized using DSL');
+            vscode.window.showInformationMessage(`Optimized using DSL. ${savingsMessage}`);
         }
         else {
-            vscode.window.showInformationMessage('Optimized using JSON');
+            vscode.window.showInformationMessage(`Optimized using JSON. ${savingsMessage}`);
         }
     }
     getInputText(editor, selectionOnly) {

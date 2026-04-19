@@ -14,6 +14,33 @@ class ToonService {
         }));
         return { k: keys, d: rows };
     }
+    convertToonToJson(toon) {
+        const { k: keys, d: data } = toon;
+        if (Array.isArray(data[0])) {
+            // Array of objects: d is ToonValue[][]
+            return data.map((row) => {
+                const obj = {};
+                keys.forEach((key, index) => {
+                    const value = row[index];
+                    if (value !== null) {
+                        obj[key] = value;
+                    }
+                });
+                return obj;
+            });
+        }
+        else {
+            // Single object: d is ToonValue[]
+            const obj = {};
+            keys.forEach((key, index) => {
+                const value = data[index];
+                if (value !== null) {
+                    obj[key] = value;
+                }
+            });
+            return [obj];
+        }
+    }
     convert(data) {
         logger_1.Logger.log('Starting TOON conversion');
         const originalSize = JSON.stringify(data).length;

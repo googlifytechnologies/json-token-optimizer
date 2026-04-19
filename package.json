@@ -30,7 +30,8 @@
                              "onCommand:json-to-toon.optimize",
                              "onCommand:aiOptimizer.toon",
                              "onCommand:aiOptimizer.dsl",
-                             "onCommand:aiOptimizer.json"
+                             "onCommand:aiOptimizer.json",
+                             "onCommand:aiOptimizer.reverse"
                          ],
     "main":  "./out/extension.js",
     "contributes":  {
@@ -50,6 +51,20 @@
                                          {
                                              "command":  "aiOptimizer.json",
                                              "title":  "Optimize JSON -\u003e Minified JSON"
+                                         },
+                                         {
+                                             "command":  "aiOptimizer.reverse",
+                                             "title":  "Reverse to JSON"
+                                         }
+                                     ],
+                        "submenus":  [
+                                         {
+                                             "id":  "aiOptimizer.submenu",
+                                             "label":  "Optimize JSON"
+                                         },
+                                         {
+                                             "id":  "aiOptimizer.reverseSubmenu",
+                                             "label":  "Reverse to JSON"
                                          }
                                      ],
                         "menus":  {
@@ -65,28 +80,35 @@
                                                              },
                                                              {
                                                                  "command":  "aiOptimizer.json"
+                                                             },
+                                                             {
+                                                                 "command":  "aiOptimizer.reverse"
                                                              }
                                                          ],
                                       "editor/context":  [
                                                              {
-                                                                 "command":  "json-to-toon.optimize",
-                                                                 "when":  "resourceExtname == .json"
-                                                             },
-                                                             {
-                                                                 "command":  "aiOptimizer.toon",
-                                                                 "when":  "resourceExtname == .json",
-                                                                 "group":  "navigation"
-                                                             },
-                                                             {
-                                                                 "command":  "aiOptimizer.dsl",
-                                                                 "when":  "resourceExtname == .json",
-                                                                 "group":  "navigation"
-                                                             },
-                                                             {
-                                                                 "command":  "aiOptimizer.json",
+                                                                 "submenu":  "aiOptimizer.submenu",
                                                                  "when":  "resourceExtname == .json",
                                                                  "group":  "navigation"
                                                              }
+                                                         ],
+                                      "aiOptimizer.submenu":  [
+                                                                   {
+                                                                       "command":  "aiOptimizer.toon",
+                                                                       "group":  "1"
+                                                                   },
+                                                                   {
+                                                                       "command":  "aiOptimizer.dsl",
+                                                                       "group":  "2"
+                                                                   },
+                                                                   {
+                                                                       "command":  "aiOptimizer.json",
+                                                                       "group":  "3"
+                                                                   },
+                                                                   {
+                                                                       "command":  "aiOptimizer.reverse",
+                                                                       "group":  "4"
+                                                                   }
                                                          ]
                                   },
                         "configuration":  {
