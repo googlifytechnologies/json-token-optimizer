@@ -1,0 +1,1 @@
+{"version":3,"file":"outputFormatter.js","sourceRoot":"","sources":["../../src/utils/outputFormatter.ts"],"names":[],"mappings":";;;AAAA,SAAgB,YAAY,CAAC,IAAa,EAAE,cAAuB,KAAK;IACtE,IAAI,WAAW,EAAE;QACf,OAAO,IAAI,CAAC,SAAS,CAAC,IAAI,EAAE,IAAI,EAAE,CAAC,CAAC,CAAC;KACtC;IACD,OAAO,IAAI,CAAC,SAAS,CAAC,IAAI,CAAC,CAAC;AAC9B,CAAC;AALD,oCAKC"}

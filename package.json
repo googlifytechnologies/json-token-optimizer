@@ -1,0 +1,81 @@
+{
+  "name": "ai-json-optimizer",
+  "displayName": "AI JSON Optimizer (Reduce Tokens)",
+  "description": "Reduce AI token usage by optimizing JSON using TOON format. Automatically chooses the most efficient format for AI models.",
+  "version": "0.0.1",
+  "publisher": "googlify-technologies",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "json",
+    "ai",
+    "token",
+    "optimization",
+    "compression",
+    "openai",
+    "claude",
+    "llm",
+    "payload"
+  ],
+  "activationEvents": [
+    "onCommand:json-to-toon.optimize"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "json-to-toon.optimize",
+        "title": "Optimize JSON for AI"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "json-to-toon.optimize"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "json-to-toon.optimize",
+          "when": "resourceExtname == .json"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AI Payload Optimizer",
+      "properties": {
+        "aiOptimizer.prettyPrint": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable formatted output instead of minified"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\"",
+    "compile": "npm run clean && tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "npm run pretest && mocha \"out/test/**/*.test.js\""
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
+    "@types/vscode": "^1.74.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "eslint": "^8.34.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "typescript": "^4.9.5",
+    "@vscode/test-electron": "^2.2.3"
+  }
+}
